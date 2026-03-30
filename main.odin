@@ -15,32 +15,30 @@ main :: proc() {
 		my := rl.GetMouseY()
 		rl.BeginDrawing()
 		rl.ClearBackground(Indigo())
+		writeBtn(tasks)
+		loadBtn(&tasks)
 		for i in 0 ..< len(tasks) {
 			x := tasks[i].x
 			y := tasks[i].y
 			tasks[i].checked = check(hover(x, y, mx, my), tasks[i].checked)
 			checked := tasks[i].checked
-			drawCheckbox(x, y, checked, hover(x, y, mx, my), tasks[i].title)
+			drawCheckbox(x, y, &checked, hover(x, y, mx, my), tasks[i].title)
 		}
+
 		rl.EndDrawing()
 	}
 	write_json(tasks)
 	return
 }
-CreateTask :: proc(
-	tasks: ^[dynamic]Checkbox,
-	title: cstring,
-	x: i32,
-	y: i32,
-	checked: bool,
-) {
+CreateTask :: proc(tasks: ^[dynamic]Checkbox, title: cstring, x: i32, y: i32, checked: bool) {
 	append(tasks, Checkbox{title, x, y, checked})
 }
 
-drawCheckbox :: proc(x, y: i32, checked, hover: bool, title: cstring) {
+drawCheckbox :: proc(x, y: i32, checkedPtr: ^bool, hover: bool, title: cstring) {
+	checked := checkedPtr^
 	rl.DrawCircle(x, y, 15, rl.WHITE)
 	rl.DrawCircle(x, y, 13, Indigo())
-	if checked {
+	if (checked) {
 		rl.DrawCircle(x, y, 13, rl.WHITE)
 	}
 	if hover {
@@ -72,6 +70,7 @@ check :: proc(hover, checked: bool) -> bool {
 }
 
 read_json :: proc(tasks: ^[dynamic]Checkbox) {
+	clear(tasks)
 	data, read_err := os.read_entire_file("tasks.json", context.allocator)
 	if read_err != nil {
 		fmt.eprintfln("Failed to load the file: %v", read_err)
@@ -155,5 +154,17 @@ write_json :: proc(tasks: [dynamic]Checkbox) {
 	err2 := os.write_entire_file("tasks.json", transmute([]byte)data)
 	if err2 != nil {
 		fmt.eprintfln("Failed to write file: %v", err2)
+	}
+}
+
+writeBtn :: proc(tasks: [dynamic]Checkbox) {
+	if rl.GuiButton(rl.Rectangle{1000, 15, 100, 50}, "Save") {
+		fmt.println("WOOO")
+		write_json(tasks)
+	}
+}
+loadBtn :: proc(tasks: ^[dynamic]Checkbox) {
+	if rl.GuiButton(rl.Rectangle{1200, 15, 100, 50}, "Load") {
+		read_json(tasks)
 	}
 }
